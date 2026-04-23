@@ -16,11 +16,13 @@ class HandDetector:
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         results = self.hands.process(rgb_frame)
 
-        if hasattr(results, 'multi_hand_landmarks') and results.multi_hand_landmarks:
-            lm = results.multi_hand_landmarks[0].hand_landmarks[8]
-            x, y = int(lm.x * frame.shape[1]), int(lm.y * frame.shape[0])
-            print(f"x: {x}, y: {y}")
+        hands_list = []
 
+        if hasattr(results, 'multi_hand_landmarks') and results.multi_hand_landmarks:
+            for multi_hlm in results.multi_hand_landmarks:
+                lm = multi_hlm.landmark
+                hands_list.append(lm)
+        return hands_list
 
 
 

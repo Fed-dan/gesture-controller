@@ -12,7 +12,8 @@ if __name__ == "__main__":
             if success and frame is not None:
                 cv2.imshow("win", frame)
 
-                print(detector.find_hands(frame))
+                hands_list = detector.find_hands(frame)
+                print("\n".join(str(t[8]) for t in hands_list))
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
