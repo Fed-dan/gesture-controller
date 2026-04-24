@@ -6,3 +6,6 @@ class MouseController:
 
     def move(self, x: float, y: float):
         pyautogui.moveTo(x * self.screen_w, y * self.screen_h, duration=0.1)  # плавное движение
+
+    def click(self):
+        pyautogui.click()

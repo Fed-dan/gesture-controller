@@ -7,11 +7,16 @@ class VolumeController:
         device = AudioUtilities.GetSpeakers()
         interface = device._dev.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
         self.volume = cast(interface, POINTER(IAudioEndpointVolume))
+
     def increase(self, step: float = 0.1):
         current = self.volume.GetMasterVolumeLevelScalar()
 
         if current + step < 1.0:
             self.volume.SetMasterVolumeLevelScalar(current + step, None)
+
+    def set_volume(self, volume: float):
+        clamped = max(0.0, min(1.0, volume))
+        self.volume.SetMasterVolumeLevelScalar(clamped, None)
 
     def decrease(self, step: float = 0.1):
         current = self.volume.GetMasterVolumeLevelScalar()

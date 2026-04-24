@@ -12,6 +12,8 @@ class CameraCapture:
     def read_frame(self) -> tuple[bool, numpy.ndarray | None]:
 
         success, frame = self.camera.read()
+        frame = cv2.flip(frame, 1)
+
         return success, frame
 
     def release(self):
