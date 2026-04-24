@@ -1,13 +1,30 @@
-﻿TIPS = [8,  12, 16, 20]   # указательный, средний, безымянный, мизинец
-PIPS = [6,  10, 14, 18]   # их вторые суставы
+﻿TIPS_OPEN = [8,  12, 16, 20]   # указательный, средний, безымянный, мизинец
+PIPS_OPEN  = [7, 11, 15, 19]
 
+TIPS_PEACE = [8, 12, 15, 19]
+PIPS_PEACE = [7, 11, 13, 17]
+
+TIPS_POINT = [8, 11, 15, 19]
+PIPS_POINT = [7, 9, 13, 17]
+
+# open 8<7 12<11 16<15 20<19
+# peace 8<7 12<11 13<15 17<19
+# point 8<7 9<11 13<15 17<19
 class GestureClassifier:
     def classify(self, hand_landmarks: list) -> str:
-        fingers = [hand_landmarks[tip].y < hand_landmarks[pip].y
-                   for tip, pip in zip(TIPS, PIPS)]
-
-        if fingers == [True, True, True, True]:   return "OPEN"
-        if fingers == [True, True, False, False]: return "PEACE"
-        if fingers == [True, False, False, False]: return "POINT"
+        if [hand_landmarks[tip].y < hand_landmarks[pip].y for tip, pip in zip(TIPS_OPEN, PIPS_OPEN)] == [True, True, True, True]:
+            return "OPEN"
+        if [hand_landmarks[tip].y < hand_landmarks[pip].y for tip, pip in zip(TIPS_PEACE, PIPS_PEACE)] == [True, True, False, False]:
+            return "PEACE"
+        if [hand_landmarks[tip].y < hand_landmarks[pip].y for tip, pip in zip(TIPS_POINT, PIPS_POINT)] == [True, False, False, False]:
+            return "POINT"
 
         return "UNKNOWN"
+
+    def is_thumb_straight(self, hand) -> bool:
+        # 4<3<2<1
+        ...
+
+    def is_pinch_mode_entry(self, hand) -> bool:
+        # POINT + большой прямой
+        ...
