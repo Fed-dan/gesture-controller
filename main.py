@@ -82,22 +82,23 @@ if __name__ == "__main__":
 
                     if gesture == "POINT": mouse_controller.move(sx, sy)
 
-                    if confirmed:
-                        if not pinch_mode:
-                            if classifier.is_pinch_mode_entry(hand):
-                                pinch_mode = True
-                                print("pinch mode")
-                                entry_distance = math.sqrt((hand[4].x - hand[8].x) ** 2 + (hand[4].y - hand[8].y) ** 2)
-                                continue
+                    if not pinch_mode:
+                        if classifier.is_pinch_mode_entry(hand) and confirmed == "PINCH_IN":
+                            pinch_mode = True
+                            entry_distance = math.dist(
+                                (hand[4].x, hand[4].y),
+                                (hand[8].x, hand[8].y)
+                            )
+                    else:  # pinch_mode=True
+                        if classifier.is_pinch_mode_exit(hand):
+                            pinch_mode = False
                         else:
-                            if classifier.is_pinch_mode_exit(hand):
-                                pinch_mode = False
-                                continue
-                            else:
-                                distance = math.sqrt((hand[4].x - hand[8].x) ** 2 + (hand[4].y - hand[8].y) ** 2)
-                                volume_change = distance / entry_distance
-                                volume_controller.set_volume(volume_change)
-                                continue
+                            distance = math.dist((hand[4].x, hand[4].y), (hand[8].x, hand[8].y))
+                            volume_controller.set_volume(distance / entry_distance)
+                        continue
+
+                    if confirmed:
+
 
                         renderer.draw_gesture(frame, confirmed)
                         # if confirmed == "OPEN": volume_controller.increase()

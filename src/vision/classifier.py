@@ -18,6 +18,10 @@ class GestureClassifier:
             return "PEACE"
         if [hand_landmarks[tip].y < hand_landmarks[pip].y for tip, pip in zip(TIPS_POINT, PIPS_POINT)] == [True, True, False, False, False] and not self.is_thumb_straight(hand_landmarks):
             return "POINT"
+        if self.is_pinch_mode_entry(hand_landmarks):
+            return "PINCH_IN"
+        if self.is_pinch_mode_exit(hand_landmarks):
+            return "PINCH_OUT"
 
         return "UNKNOWN"
 

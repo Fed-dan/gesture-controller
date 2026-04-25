@@ -1,5 +1,5 @@
 class GestureDebounce:
-    def __init__(self, threshold: int = 5):
+    def __init__(self, threshold: int = 10):
         self.threshold = threshold
         self.last_gesture: tuple[str, int] | None = None
 
