@@ -1,5 +1,5 @@
 import cv2
-import numpy
+import numpy as np
 
 
 
@@ -9,13 +9,13 @@ class CameraCapture:
         if not self.camera.isOpened():
             raise Exception("Could not open camera")
 
-    def read_frame(self) -> tuple[bool, numpy.ndarray | None]:
+    def read_frame(self) -> tuple[bool, np.ndarray | None]:
 
         success, frame = self.camera.read()
-        frame = cv2.flip(frame, 1)
+        if success and frame is not None: frame = cv2.flip(frame, 1)
 
         return success, frame
 
-    def release(self):
+    def release(self) -> None:
         self.camera.release()
 

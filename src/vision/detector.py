@@ -2,7 +2,7 @@
 import mediapipe as mp
 
 class HandDetector:
-    def __init__(self, max_hands: int = 1, detection_confidence: float = 0.7):
+    def __init__(self, max_hands: int = 2, detection_confidence: float = 0.7):
         mp_hands = mp.solutions.hands
 
         self.hands = mp_hands.Hands(
@@ -18,10 +18,16 @@ class HandDetector:
 
         hands_list = []
 
-        if hasattr(results, 'multi_hand_landmarks') and results.multi_hand_landmarks:
-            for multi_hlm in results.multi_hand_landmarks:
-                lm = multi_hlm.landmark
-                hands_list.append(lm)
+        if results.multi_hand_landmarks:
+            for hand_landmarks, handedness in zip(
+                    results.multi_hand_landmarks,
+                    results.multi_handedness
+            ):
+                lm = hand_landmarks.landmark
+                hand_label = handedness.classification[0].label
+
+                hands_list.append((lm, hand_label))
+
         return hands_list
 
 
