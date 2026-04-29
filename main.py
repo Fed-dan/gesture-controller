@@ -1,64 +1,105 @@
-import math
+import cv2, yaml, os
 
-import cv2
 from src.capture.camera import CameraCapture
-from src.vision.detector import HandDetector
 from src.capture.renderer import Renderer
+from src.vision.detector import HandDetector
 from src.vision.classifier import GestureClassifier
 from src.vision.smoother import CoordinateSmoother
 from src.vision.debounce import GestureDebounce
-from src.controller import media, mouse, volume
-from collections import deque
+from src.vision.pinch_detector import PinchDetector
+from src.vision.complex_gesture_detector import ComplexGestureDetector
+from src.controller.mouse import MouseController
+from src.controller.media import MediaController
+from src.controller.volume import VolumeController
+from src.controller.brightness import BrightnessController
 
-
-click_history = deque(maxlen=30)
-click_cooldown = 0
-CLICK_COOLDOWN = 0.5
-
-
-def detect_click(history, hand) -> bool:
-    history_list = list(history)
-
-    first_chunk, second_chunk, third_chunk = [
-        history_list[i:i + 10]
-        for i in range(0, 30, 10)
-    ]
-
-    first_chunk_index_max = min(range(len(first_chunk)), key=lambda i: first_chunk[i][0])
-    second_chunk_index_min = max(range(len(second_chunk)), key=lambda i: second_chunk[i][0])
-    third_chunk_index_max = min(range(len(third_chunk)), key=lambda i: third_chunk[i][0])
-
-    first_chunk_max_value = first_chunk[first_chunk_index_max][0]
-    first_chunk_max_gesture = first_chunk[first_chunk_index_max][1]
-
-    second_chunk_min_gesture = second_chunk[second_chunk_index_min][1]
-    second_chunk_min_value = second_chunk[second_chunk_index_min][0]
-
-    third_chunk_max_value = third_chunk[third_chunk_index_max][0]
-    third_chunk_max_gesture = third_chunk[third_chunk_index_max][1]
-
-    return (first_chunk_max_gesture == third_chunk_max_gesture == "POINT"
-            and second_chunk_min_value - first_chunk_max_value  > hand[6].y - hand[8].y
-            and second_chunk_min_value - third_chunk_max_value  > hand[6].y - hand[8].y)
 
 if __name__ == "__main__":
-    c1 = CameraCapture()
-    detector = HandDetector()
-    renderer = Renderer()
-    classifier = GestureClassifier()
-    smoother = CoordinateSmoother()
-    debounce = GestureDebounce()
 
-    mouse_controller = mouse.MouseController()
-    media_controller = media.MediaController()
-    volume_controller = volume.VolumeController()
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-    pinch_mode = False
-    entry_distance = None
+    try:
+        with open(os.path.join(BASE_DIR, "config", "config.yaml"), encoding="utf-8") as f:
+            config = yaml.safe_load(f)
+    except FileNotFoundError:
+        print("Error: config/config.yaml not found.")
+        exit(1)
 
 
-    click_cooldown = 0
-    CLICK_COOLDOWN = 0.5
+    try:
+        with open(os.path.join(BASE_DIR, "config", "gestures.yaml"), encoding="utf-8") as f:
+            gestures = yaml.safe_load(f)
+    except FileNotFoundError:
+        print("Error: config/gestures.yaml not found.")
+        exit(1)
+
+    try:
+        with open(os.path.join(BASE_DIR, "config", "complex_gestures.yaml"), encoding="utf-8") as f:
+            complex_config = yaml.safe_load(f)
+    except FileNotFoundError:
+        print("Error: config/complex_gestures.yaml not found.")
+        exit(1)
+
+
+    try:
+        with open(os.path.join(BASE_DIR, "config", "auxiliary.yaml"), encoding="utf-8") as f:
+            auxiliary_config = yaml.safe_load(f)
+    except FileNotFoundError:
+        print("Error: config/auxiliary.yaml not found.")
+        exit(1)
+
+
+    try:
+        with open(os.path.join(BASE_DIR, "config", "combined_gestures.yaml"), encoding="utf-8") as f:
+            combined_config = yaml.safe_load(f)
+    except FileNotFoundError:
+        print("Error: config/combined_gestures.yaml not found.")
+        exit(1)
+
+    try:
+        c1 = CameraCapture(camera_index=config["camera"]["camera_index"])
+        renderer = Renderer()
+
+        detector = HandDetector(
+            max_hands=config["detector"]["max_hands"],
+            detection_confidence=config["detector"]["detection_confidence"]
+        )
+
+        classifier = GestureClassifier(
+            gestures=gestures["GESTURES"],
+            auxiliary=auxiliary_config["AUXILIARY"],
+            combined=combined_config["COMBINED_GESTURES"]
+        )
+
+        pinch_detector = PinchDetector()
+
+        complex_gestures = ComplexGestureDetector(
+            gestures=complex_config["COMPLEX_GESTURES"],
+            max_len=config["complex_gestures"]["max_len"])
+
+        smoother = CoordinateSmoother(alpha=config["smoother"]["alpha"])
+
+        debounce = GestureDebounce(threshold=config["debounce"]["threshold"])
+
+        mouse_controller = MouseController(duration=config["mouse"]["duration"])
+
+        media_controller = MediaController()
+
+        volume_controller = VolumeController(
+            inc_step=config["volume"]["inc_step"],
+            dec_step=config["volume"]["dec_step"]
+        )
+
+        brightness_controller = BrightnessController(
+            inc_step=config["brightness"]["inc_step"],
+            dec_step=config["brightness"]["dec_step"]
+        )
+    except KeyError as e:
+        print(f"Error: missing key {e} in config/config.yaml. Please complete the config.")
+        exit(1)
+    except TypeError as e:
+        print(f"Error: {e} Please check the types of values in config/config.yaml.")
+        exit(1)
 
     try:
         while True:
@@ -66,50 +107,47 @@ if __name__ == "__main__":
             if success and frame is not None:
 
                 hands_list = detector.find_hands(frame)
-
-                if hands_list:
-                    lm8 = hands_list[0][8]
-                    sx, sy = smoother.smooth(lm8.x, lm8.y)
-                    lm8.x, lm8.y = sx, sy
-
                 renderer.draw_landmarks(frame, hands_list)
 
                 for hand in hands_list:
+
+                    if not hand: continue
+
+                    lm8 = hand[0][8]
+                    sx, sy = smoother.smooth(lm8.x, lm8.y)
+                    lm8.x, lm8.y = sx, sy
+
                     gesture = classifier.classify(hand)
+                    confirmed = debounce.update(gesture, hand[1])
 
-                    click_history.append((hand[8].y, gesture))
-                    confirmed = debounce.update(gesture)
+                    hand_landmarks = hand[0]
+                    hand_label = hand[1]
 
-                    if gesture == "POINT": mouse_controller.move(sx, sy)
+                    if gesture == "POINT" and hand_label == "Right": mouse_controller.move(sx, sy)
 
-                    if not pinch_mode:
-                        if classifier.is_pinch_mode_entry(hand) and confirmed == "PINCH_IN":
-                            pinch_mode = True
-                            entry_distance = math.dist(
-                                (hand[4].x, hand[4].y),
-                                (hand[8].x, hand[8].y)
-                            )
-                    else:  # pinch_mode=True
-                        if classifier.is_pinch_mode_exit(hand):
-                            pinch_mode = False
-                        else:
-                            distance = math.dist((hand[4].x, hand[4].y), (hand[8].x, hand[8].y))
-                            volume_controller.set_volume(distance / entry_distance)
+                    distance = pinch_detector.update(hand, classifier)
+
+                    if pinch_detector.is_active(hand_label):
+                        if hand_label == "Left" and distance is not None :
+                            volume_controller.set_volume(distance)
+                        elif hand_label == "Right" and distance is not None:
+                            brightness_controller.set_brightness(distance)
                         continue
 
+
                     if confirmed:
+                        complex_gestures.update(confirmed, hand_label)
+                        complex_gesture = complex_gestures.classify_complex_gesture()
 
+                        if complex_gesture:
+                            renderer.draw_gesture(frame, complex_gesture, hand_label)
 
-                        renderer.draw_gesture(frame, confirmed)
-                        # if confirmed == "OPEN": volume_controller.increase()
-                        # if confirmed == "PEACE": volume_controller.decrease()
-
-                    if len(click_history) == 30 and detect_click(click_history, hand):
-                        mouse_controller.click()
+                            if complex_gesture == "CLICK":
+                                mouse_controller.click()
+                        else:
+                            renderer.draw_gesture(frame, confirmed, hand_label)
 
                 cv2.imshow("win", frame)
-
-
 
             if cv2.waitKey(1) & 0xFF == ord('q'): break
 

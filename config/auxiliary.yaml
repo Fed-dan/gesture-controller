@@ -1,0 +1,14 @@
+AUXILIARY:
+  - name: THUMB_STRAIGHT_RIGHT
+    hand: Right
+    axis: x
+    compare_a: [4, 3]
+    compare_b: [3, 2]
+    expected: [true, true]
+
+  - name: THUMB_STRAIGHT_LEFT
+    hand: Left
+    axis: x
+    compare_a: [4, 3]
+    compare_b: [3, 2]
+    expected: [false, false]

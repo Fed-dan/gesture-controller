@@ -1,0 +1,26 @@
+# name - имя жеста
+# compare_a - индексы пальцев которыбе будут сравнены с compare_b в формате land_marks[index_a].y < land_marks[index_b].y
+# expected - ожидаемый результат сравнения, что бы распознать жест
+GESTURES:
+  - name: "POINT"
+    compare_a: [8, 11, 15, 19]
+    compare_b: [7, 9, 13, 17]
+    expected: [true, false, false, false]
+
+  - name: "PEACE"
+    compare_a: [8, 12, 15, 19]
+    compare_b: [7, 11, 13, 17]
+    expected: [true, true, false, false]
+
+  - name: "FIST"
+    compare_a: [7, 11, 15, 19]
+    compare_b: [5, 9, 13, 17]
+    expected: [false, false, false, false]
+
+  - name: "OPEN"
+    compare_a: [8,  12, 16, 20]
+    compare_b: [7, 11, 15, 19]
+    expected: [true, true, true, true]
+
+
+

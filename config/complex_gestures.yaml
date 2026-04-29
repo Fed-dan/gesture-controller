@@ -1,0 +1,10 @@
+
+#max complex gesture length contained in config.yaml
+
+COMPLEX_GESTURES:
+  - name: CLICK
+    sequence:
+      - [POINT, Left]
+      - [UNKNOWN, Left]
+      - [POINT, Left]
+

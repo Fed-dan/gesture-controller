@@ -1,36 +1,49 @@
-﻿TIPS_OPEN = [8,  12, 16, 20]   # указательный, средний, безымянный, мизинец
-PIPS_OPEN  = [7, 11, 15, 19]
+﻿class GestureClassifier:
+    def __init__(self, gestures: list = [], auxiliary: list = [], combined: list = []):
+        self.gestures = gestures
+        self.auxiliary = {a["name"]: a for a in auxiliary}  # словарь для быстрого поиска
+        self.combined = combined
 
-TIPS_PEACE = [8, 12, 15, 19]
-PIPS_PEACE = [7, 11, 13, 17]
+    def classify(self, hand: list) -> str:
+        combined = self.classify_combined(hand)
+        if combined:
+            return combined
 
-TIPS_POINT = [8, 8, 11, 15, 19]
-PIPS_POINT = [7, 6, 9, 13, 17]
-
-# open 8<7 12<11 16<15 20<19
-# peace 8<7 12<11 13<15 17<19
-# point 8<7 9<11 13<15 17<19
-class GestureClassifier:
-    def classify(self, hand_landmarks: list) -> str:
-        if [hand_landmarks[tip].y < hand_landmarks[pip].y for tip, pip in zip(TIPS_OPEN, PIPS_OPEN)] == [True, True, True, True]:
-            return "OPEN"
-        if [hand_landmarks[tip].y < hand_landmarks[pip].y for tip, pip in zip(TIPS_PEACE, PIPS_PEACE)] == [True, True, False, False]:
-            return "PEACE"
-        if [hand_landmarks[tip].y < hand_landmarks[pip].y for tip, pip in zip(TIPS_POINT, PIPS_POINT)] == [True, True, False, False, False] and not self.is_thumb_straight(hand_landmarks):
-            return "POINT"
-        if self.is_pinch_mode_entry(hand_landmarks):
-            return "PINCH_IN"
-        if self.is_pinch_mode_exit(hand_landmarks):
-            return "PINCH_OUT"
+        for gesture in self.gestures:
+            if self.compare_y(hand, gesture["compare_a"], gesture["compare_b"], gesture["expected"]):
+                return gesture["name"]
 
         return "UNKNOWN"
 
-    def is_thumb_straight(self, hand) -> bool:
-        return hand[4].x < hand[3].x
+    def classify_combined(self, hand) -> str | None:
+        hand_label = hand[1]
+        for gesture in self.combined:
+            if gesture["hand"] != hand_label:
+                continue
 
+            # проверяем base жест
+            base = next((g for g in self.gestures if g["name"] == gesture["base"]), None)
+            if not base or not self.compare_y(hand, base["compare_a"], base["compare_b"], base["expected"]):
+                continue
 
-    def is_pinch_mode_entry(self, hand) -> bool:
-        return self.is_thumb_straight(hand) and [hand[tip].y < hand[pip].y for tip, pip in zip(TIPS_POINT, PIPS_POINT)] == [True, True, False, False, False]
+            # проверяем auxiliary жест
+            aux = self.auxiliary.get(gesture["requires"])
+            if not aux:
+                continue
 
-    def is_pinch_mode_exit(self, hand) -> bool:
-        return not self.is_pinch_mode_entry(hand)
+            if aux["axis"] == "x":
+                if self.compare_x(hand, aux["compare_a"], aux["compare_b"], aux["expected"]):
+                    return gesture["name"]
+            else:
+                if self.compare_y(hand, aux["compare_a"], aux["compare_b"], aux["expected"]):
+                    return gesture["name"]
+
+        return None
+
+    def compare_y(self, hand, compare_a, compare_b, expected) -> bool:
+        lm = hand[0]
+        return all((lm[compare_a[i]].y < lm[compare_b[i]].y) == expected[i] for i in range(len(compare_a)))
+
+    def compare_x(self, hand, compare_a, compare_b, expected) -> bool:
+        lm = hand[0]
+        return all((lm[compare_a[i]].x < lm[compare_b[i]].x) == expected[i] for i in range(len(compare_a)))

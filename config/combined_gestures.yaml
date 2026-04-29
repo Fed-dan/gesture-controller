@@ -1,0 +1,10 @@
+COMBINED_GESTURES:
+  - name: PINCH_IN
+    hand: Right
+    base: POINT
+    requires: THUMB_STRAIGHT_RIGHT
+
+  - name: PINCH_IN
+    hand: Left
+    base: POINT
+    requires: THUMB_STRAIGHT_LEFT
