@@ -22,7 +22,8 @@ brightness:
   dec_step: 10
 
 mouse:
-  duration: 0.1
+  duration: 0.05
+  sensitivity: 0.7
 
 camera:
   camera_index: 0

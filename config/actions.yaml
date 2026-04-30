@@ -1,0 +1,11 @@
+ACTIONS:
+
+  simple_right:
+    PEACE: launch_2
+
+  simple_left:
+    PEACE: launch_1
+
+  complex:
+    CLICK: mouse_click
+
