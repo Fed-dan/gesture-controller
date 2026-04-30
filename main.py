@@ -165,8 +165,6 @@ if __name__ == "__main__":
                             brightness_controller.set_brightness(distance)
                         continue
 
-                    if gesture == "POINT" and hand_label=="Right":
-                        mouse_controller.move(sx, sy)
 
 
                     if confirmed:
